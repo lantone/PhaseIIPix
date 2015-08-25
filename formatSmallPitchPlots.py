@@ -17,7 +17,7 @@ if not arguments.inputFile:
 
 from ROOT import *
 gROOT.SetBatch()
-
+gStyle.SetOptStat(0)
 
 PIXEL_HEIGHT = 4
 PIXEL_WIDTH  = 6
@@ -107,9 +107,15 @@ def splitDistribution(twoDplot,oneDplot):
     h100x150 = TH1F(name+"100x150",name,nbins,xmin,xmax)
     h50x300 = TH1F(name+"50x300",name,nbins,xmin,xmax)
     h25x600 = TH1F(name+"25x600",name,nbins,xmin,xmax)
+    h100x150_edges = TH1F(name+"100x150edges",name,nbins,xmin,xmax)
+    h50x300_edges = TH1F(name+"50x300edges",name,nbins,xmin,xmax)
+    h25x600_edges = TH1F(name+"25x600edges",name,nbins,xmin,xmax)
     SetOwnership(h100x150, False)
     SetOwnership(h50x300, False)
     SetOwnership(h25x600, False)
+    SetOwnership(h100x150_edges, False)
+    SetOwnership(h50x300_edges, False)
+    SetOwnership(h25x600_edges, False)
 
     h100x150.SetLineColor(kRed)
     h100x150.SetLineWidth(2)
@@ -117,12 +123,35 @@ def splitDistribution(twoDplot,oneDplot):
     h50x300.SetLineWidth(2)
     h25x600.SetLineColor(kGreen)
     h25x600.SetLineWidth(2)
+    h100x150_edges.SetFillColor(kRed)
+    h100x150_edges.SetFillStyle(3001)
+    h100x150_edges.SetLineColor(kRed)
+    h100x150_edges.SetLineWidth(1)
+    h50x300_edges.SetFillColor(kBlue)
+    h50x300_edges.SetFillStyle(3001)
+    h50x300_edges.SetLineColor(kBlue)
+    h50x300_edges.SetLineWidth(1)
+    h25x600_edges.SetFillColor(kGreen)
+    h25x600_edges.SetFillStyle(3001)
+    h25x600_edges.SetLineColor(kGreen)
+    h25x600_edges.SetLineWidth(1)
+
     oneDplot.SetLineColor(kBlack)
-    oneDplot.SetLineWidth(3)
+    oneDplot.SetLineWidth(5)
 
+    # i hate the stupid stats box!!
+    h100x150.SetStats(0)
+    h50x300.SetStats(0)
+    h25x600.SetStats(0)
+    h100x150_edges.SetStats(0)
+    h50x300_edges.SetStats(0)
+    h25x600_edges.SetStats(0)
+    oneDplot.SetStats(0)
 
+    # leave enough room for the legends
+    oneDplot.GetYaxis().SetRangeUser(0.01,1.7*oneDplot.GetMaximum())
 
-    legend = TLegend(0.6666667,0.6575053,0.8994253,0.9006342)
+    legend = TLegend(0.4741379,0.6553911,0.7068966,0.9006342)
     SetOwnership(legend, False)
     legend.SetBorderSize(0)
     legend.SetFillStyle(0)
@@ -131,22 +160,42 @@ def splitDistribution(twoDplot,oneDplot):
     legend.AddEntry(h25x600,"25#times600 #mum","L")
     legend.AddEntry(oneDplot,"total","L")
 
+    legend2 = TLegend(0.6781609,0.7145877,0.9109195,0.9006342)
+    SetOwnership(legend2, False)
+    legend2.SetBorderSize(0)
+    legend2.SetFillStyle(0)
+    legend2.AddEntry(h100x150_edges,"(edge pixels)","F")
+    legend2.AddEntry(h50x300_edges, "(edge pixels)","F")
+    legend2.AddEntry(h25x600_edges, "(edge pixels)","F")
+
     for x in range(1,twoDplot.GetNbinsX()+1):
         for y in range(1,twoDplot.GetNbinsY()+1):
             content = twoDplot.GetBinContent(x,y)
             if y <= 20:
                 h100x150.Fill(content)
+                if x == 0 or x == 52:
+                    h100x150_edges.Fill(content)
             elif y <= 50:
                 h50x300.Fill(content)
+                if x == 0 or x == 52:
+                    h50x300_edges.Fill(content)
             else:
                 h25x600.Fill(content)
+                if x == 0 or x == 52 or y == 80:
+                    h25x600_edges.Fill(content)
+
 
     canvas = TCanvas(name,"")
+#    canvas.SetOptStat(0)
     oneDplot.Draw()
+    h100x150_edges.Draw("same")
     h100x150.Draw("same")
+    h50x300_edges.Draw("same")
     h50x300.Draw("same")
+    h25x600_edges.Draw("same")
     h25x600.Draw("same")
     legend.Draw("same")
+    legend2.Draw("same")
 
     return canvas
 
