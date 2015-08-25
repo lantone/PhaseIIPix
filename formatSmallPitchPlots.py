@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from ROOT import *
+
 import sys
 import re
 from optparse import OptionParser
@@ -15,6 +15,7 @@ if not arguments.inputFile:
     print "please specify input file";
     sys.exit(0)
 
+from ROOT import *
 gROOT.SetBatch()
 
 
@@ -95,6 +96,60 @@ def rescalePlot(plot):
 
     return rescaledPlot
 
+# 
+def splitDistribution(twoDplot,oneDplot):
+
+    nbins = oneDplot.GetXaxis().GetNbins()
+    xmin = oneDplot.GetXaxis().GetXmin()
+    xmax = oneDplot.GetXaxis().GetXmax()
+    name = oneDplot.GetName()
+
+    h100x150 = TH1F(name+"100x150",name,nbins,xmin,xmax)
+    h50x300 = TH1F(name+"50x300",name,nbins,xmin,xmax)
+    h25x600 = TH1F(name+"25x600",name,nbins,xmin,xmax)
+    SetOwnership(h100x150, False)
+    SetOwnership(h50x300, False)
+    SetOwnership(h25x600, False)
+
+    h100x150.SetLineColor(kRed)
+    h100x150.SetLineWidth(2)
+    h50x300.SetLineColor(kBlue)
+    h50x300.SetLineWidth(2)
+    h25x600.SetLineColor(kGreen)
+    h25x600.SetLineWidth(2)
+    oneDplot.SetLineColor(kBlack)
+    oneDplot.SetLineWidth(3)
+
+
+
+    legend = TLegend(0.6666667,0.6575053,0.8994253,0.9006342)
+    SetOwnership(legend, False)
+    legend.SetBorderSize(0)
+    legend.SetFillStyle(0)
+    legend.AddEntry(h100x150,"100#times150 #mum","L")
+    legend.AddEntry(h50x300,"50#times300 #mum","L")
+    legend.AddEntry(h25x600,"25#times600 #mum","L")
+    legend.AddEntry(oneDplot,"total","L")
+
+    for x in range(1,twoDplot.GetNbinsX()+1):
+        for y in range(1,twoDplot.GetNbinsY()+1):
+            content = twoDplot.GetBinContent(x,y)
+            if y <= 20:
+                h100x150.Fill(content)
+            elif y <= 50:
+                h50x300.Fill(content)
+            else:
+                h25x600.Fill(content)
+
+    canvas = TCanvas(name,"")
+    oneDplot.Draw()
+    h100x150.Draw("same")
+    h50x300.Draw("same")
+    h25x600.Draw("same")
+    legend.Draw("same")
+
+    return canvas
+
 ###############################################################################
 
 
@@ -116,8 +171,15 @@ for dirKey in inputFile.GetListOfKeys():
          if re.match ('TH1', plotKey.GetClassName()): # found a 1-D histogram
              plotName = plotKey.GetName()
              plot = inputFile.Get(dir+"/"+plotName)
-             outputFile.cd(dir)
-             plot.Write()
+             outputFile.cd(dir) 
+             # for 1D distributions, split into 3 by pixel size
+             # and save resulting canvas to file
+             if plotName.startswith("dist_"):
+                 twoDPlot = inputFile.Get(dir+"/"+plotName.split("dist_")[1])
+                 splitPlotCanvas = splitDistribution(twoDPlot,plot)
+                 splitPlotCanvas.Write()
+             else:
+                 plot.Write()
          if re.match ('TH2', plotKey.GetClassName()): # found a 2-D histogram             
              plotName = plotKey.GetName()
              plot = inputFile.Get(dir+"/"+plotName)
