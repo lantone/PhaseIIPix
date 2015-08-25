@@ -172,21 +172,26 @@ for dirKey in inputFile.GetListOfKeys():
              plotName = plotKey.GetName()
              plot = inputFile.Get(dir+"/"+plotName)
              outputFile.cd(dir) 
-             # for 1D distributions, split into 3 by pixel size
+             # for 1D distributions of 2D plots, split into 3 by pixel size
              # and save resulting canvas to file
              if plotName.startswith("dist_"):
                  twoDPlot = inputFile.Get(dir+"/"+plotName.split("dist_")[1])
                  splitPlotCanvas = splitDistribution(twoDPlot,plot)
                  splitPlotCanvas.Write()
+             # for regular 1D plots, copy them into the output file
              else:
                  plot.Write()
          if re.match ('TH2', plotKey.GetClassName()): # found a 2-D histogram             
              plotName = plotKey.GetName()
              plot = inputFile.Get(dir+"/"+plotName)
-             rescaledPlot = rescalePlot(plot)
              outputFile.cd(dir)
-             rescaledPlot.Write()
-
+             # for ROC plots, split into three components
+             if plot.GetNbinsX() == 52 and plot.GetNbinsY() == 80:
+                 rescaledPlot = rescalePlot(plot)
+                 rescaledPlot.Write()
+             # for regular 2D plots, copy them into the output file
+             else:
+                 plot.Write()
 
 
 
